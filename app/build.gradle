@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace 'com.voyantiq'
+    namespace 'com.voyantiq.app'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.voyantiq"
+        applicationId "com.voyantiq.app"
         minSdk 24
         targetSdk 34
         versionCode 1
@@ -25,18 +25,22 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = '17'
     }
+
     buildFeatures {
         compose true
     }
+
     composeOptions {
-        kotlinCompilerExtensionVersion '1.4.3'
+        kotlinCompilerExtensionVersion '1.5.1'
     }
 }
 
@@ -53,10 +57,10 @@ dependencies {
     // Hilt
     implementation "com.google.dagger:hilt-android:2.48"
     kapt "com.google.dagger:hilt-android-compiler:2.48"
+    implementation "androidx.hilt:hilt-navigation-compose:1.0.0"
 
     // Navigation
     implementation "androidx.navigation:navigation-compose:2.7.4"
-    implementation "androidx.hilt:hilt-navigation-compose:1.0.0"
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
