@@ -7,12 +7,12 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
     }
 }
 
-rootProject.name = "Voyant IQ"
-include(":app")
+rootProject.name = "VoyantIQ"
+include ':app'
