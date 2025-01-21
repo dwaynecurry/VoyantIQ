@@ -1,7 +1,7 @@
 package com.voyantiq.app.data.repository
 
 import com.voyantiq.app.data.model.Trip
-import com.voyantiq.app.data.model.Activity
+import com.voyantiq.app.data.model.TripActivity
 import com.voyantiq.app.data.model.TripStatus
 import java.time.LocalDate
 import java.util.UUID
@@ -11,7 +11,6 @@ class TripRepository {
     private val trips = mutableMapOf<String, Trip>()
 
     suspend fun createTrip(
-        userId: String,
         destination: String,
         startDate: LocalDate,
         endDate: LocalDate,
@@ -20,13 +19,14 @@ class TripRepository {
         return try {
             val trip = Trip(
                 id = UUID.randomUUID().toString(),
-                userId = userId,
                 destination = destination,
                 startDate = startDate,
                 endDate = endDate,
                 budget = budget,
-                activities = emptyList(),
-                status = TripStatus.PLANNED
+                status = TripStatus.PLANNING,
+                progress = 0f,
+                spent = 0.0,
+                activities = emptyList()
             )
             trips[trip.id] = trip
             Result.success(trip)
@@ -35,10 +35,18 @@ class TripRepository {
         }
     }
 
-    suspend fun getTripsForUser(userId: String): Result<List<Trip>> {
+    suspend fun getAllTrips(): Result<List<Trip>> {
         return try {
-            val userTrips = trips.values.filter { it.userId == userId }
-            Result.success(userTrips)
+            Result.success(trips.values.toList())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getTripById(tripId: String): Result<Trip> {
+        return try {
+            val trip = trips[tripId] ?: throw Exception("Trip not found")
+            Result.success(trip)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -46,12 +54,14 @@ class TripRepository {
 
     suspend fun addActivity(
         tripId: String,
-        activity: Activity
+        activity: TripActivity
     ): Result<Trip> {
         return try {
             val existingTrip = trips[tripId] ?: throw Exception("Trip not found")
             val updatedTrip = existingTrip.copy(
-                activities = existingTrip.activities + activity
+                activities = existingTrip.activities + activity,
+                progress = calculateProgress(existingTrip.activities + activity),
+                spent = (existingTrip.activities + activity).sumOf { it.cost }
             )
             trips[tripId] = updatedTrip
             Result.success(updatedTrip)
@@ -72,5 +82,11 @@ class TripRepository {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun calculateProgress(activities: List<TripActivity>): Float {
+        if (activities.isEmpty()) return 0f
+        val bookedActivities = activities.count { it.isBooked }
+        return bookedActivities.toFloat() / activities.size
     }
 }

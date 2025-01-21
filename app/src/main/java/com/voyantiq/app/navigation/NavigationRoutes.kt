@@ -1,7 +1,7 @@
 package com.voyantiq.app.navigation
 
 sealed class NavigationRoutes(val route: String) {
-    // Existing authentication routes
+    // Authentication routes
     object Splash : NavigationRoutes("splash")
     object Welcome : NavigationRoutes("welcome")
     object Login : NavigationRoutes("login")
@@ -37,13 +37,7 @@ sealed class NavigationRoutes(val route: String) {
     object SearchResults : NavigationRoutes("search_results/{query}") {
         fun createRoute(query: String) = "search_results/$query"
     }
-    object Destination : NavigationRoutes("destination/{id}") {
+    object DestinationDetails : NavigationRoutes("destination/{id}") {
         fun createRoute(id: String) = "destination/$id"
     }
-
-    // Booking related routes
-    object BookingDetails : NavigationRoutes("booking_details/{bookingId}") {
-        fun createRoute(bookingId: String) = "booking_details/$bookingId"
-    }
-    object BookingHistory : NavigationRoutes("booking_history")
 }

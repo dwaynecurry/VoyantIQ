@@ -27,7 +27,6 @@ fun VoyantNavigation(
             )
         }
 
-        // In your VoyantNavigation.kt, update the welcome screen navigation
         composable(NavigationRoutes.Welcome.route) {
             WelcomeScreen(
                 onGetStartedClick = {
@@ -35,11 +34,6 @@ fun VoyantNavigation(
                 },
                 onLoginClick = {
                     navController.navigate(NavigationRoutes.Login.route)
-                },
-                onDevBypassClick = {
-                    navController.navigate(NavigationRoutes.Home.route) {
-                        popUpTo(NavigationRoutes.Welcome.route) { inclusive = true }
-                    }
                 }
             )
         }
@@ -65,44 +59,13 @@ fun VoyantNavigation(
         composable(NavigationRoutes.Search.route) {
             SearchScreen(
                 onDestinationClick = { destinationId ->
-                    navController.navigate(NavigationRoutes.Destination.createRoute(destinationId))
+                    navController.navigate(NavigationRoutes.DestinationDetails.createRoute(destinationId))
                 }
             )
         }
 
-        composable(NavigationRoutes.Bookings.route) {
-            BookingsScreen(
-                onBookingClick = { bookingId ->
-                    navController.navigate(NavigationRoutes.BookingDetails.createRoute(bookingId))
-                }
-            )
-        }
-
-        composable(NavigationRoutes.Profile.route) {
-            ProfileScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onEditPreferencesClick = {
-                    navController.navigate(NavigationRoutes.Preferences.route)
-                },
-                onPaymentMethodsClick = {
-                    navController.navigate(NavigationRoutes.PaymentMethods.route)
-                },
-                onSettingsClick = {
-                    navController.navigate(NavigationRoutes.Settings.route)
-                },
-                onLogoutClick = {
-                    navController.navigate(NavigationRoutes.Welcome.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        // Destination details
         composable(
-            route = NavigationRoutes.Destination.route,
+            route = NavigationRoutes.DestinationDetails.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStackEntry ->
             val destinationId = backStackEntry.arguments?.getString("id") ?: return@composable
@@ -115,18 +78,29 @@ fun VoyantNavigation(
             )
         }
 
-        // Booking details
         composable(
-            route = NavigationRoutes.BookingDetails.route,
-            arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
+            route = NavigationRoutes.TripDetails.route,
+            arguments = listOf(navArgument("tripId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: return@composable
-            BookingDetailsScreen(
-                bookingId = bookingId,
-                onBackClick = { navController.popBackStack() }
+            val tripId = backStackEntry.arguments?.getString("tripId") ?: return@composable
+            TripDetailsScreen(
+                tripId = tripId,
+                onBackClick = { navController.popBackStack() },
+                onEditClick = {
+                    // Will implement edit functionality later
+                }
             )
         }
 
-        // Keep your existing routes...
+        composable(NavigationRoutes.TripPlanning.route) {
+            TripPlanningScreen(
+                onBackClick = { navController.popBackStack() },
+                onNextClick = {
+                    navController.navigate(NavigationRoutes.ItineraryGeneration.route)
+                }
+            )
+        }
+
+        // Add other routes as needed...
     }
 }

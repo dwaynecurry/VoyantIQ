@@ -13,50 +13,42 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.voyantiq.app.ui.theme.VoyantColors
-import java.text.SimpleDateFormat
+import com.voyantiq.app.data.model.*
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
-
-data class TripActivity(
-    val id: String,
-    val title: String,
-    val type: ActivityType,
-    val startTime: Date,
-    val endTime: Date,
-    val location: String,
-    val cost: Double,
-    val isBooked: Boolean = false
-)
-
-enum class ActivityType {
-    RESTAURANT,
-    SIGHTSEEING,
-    EVENT,
-    TRANSPORT;
-
-    fun icon() = when (this) {
-        RESTAURANT -> Icons.Default.Restaurant
-        SIGHTSEEING -> Icons.Default.Landscape
-        EVENT -> Icons.Default.Event
-        TRANSPORT -> Icons.Default.DirectionsCar
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripDetailsScreen(
+    tripId: String,
     onBackClick: () -> Unit,
     onEditClick: () -> Unit
 ) {
     var currentDayIndex by remember { mutableStateOf(0) }
-    var activities by remember { mutableStateOf(sampleActivities) }
     var showAddActivityDialog by remember { mutableStateOf(false) }
     var showTimeConflictDialog by remember { mutableStateOf(false) }
     var conflictingActivity by remember { mutableStateOf<TripActivity?>(null) }
 
-    val timeFormatter = remember {
-        SimpleDateFormat("HH:mm", Locale.getDefault()).apply {
-            timeZone = TimeZone.getDefault()
-        }
+    val trip = remember {
+        SampleData.getTripById(tripId) ?: Trip(
+            id = "0",
+            destination = "Unknown Trip",
+            startDate = LocalDate.now(),
+            endDate = LocalDate.now(),
+            status = TripStatus.PLANNING,
+            progress = 0f,
+            budget = 0.0,
+            spent = 0.0
+        )
+    }
+
+    val activities = remember(tripId) {
+        SampleData.getActivitiesForTrip(tripId)
+    }
+
+    val days = remember(trip) {
+        getDaysForTrip(trip)
     }
 
     Scaffold(
@@ -65,12 +57,12 @@ fun TripDetailsScreen(
                 title = {
                     Column {
                         Text(
-                            "Paris Adventure",
+                            trip.destination,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "June 15 - June 22, 2024",
+                            DateTimeUtils.formatDateRange(trip.startDate, trip.endDate),
                             style = MaterialTheme.typography.bodyMedium,
                             color = VoyantColors.TextSecondary
                         )
@@ -97,41 +89,45 @@ fun TripDetailsScreen(
             }
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Day selector
-            ScrollableTabRow(
-                selectedTabIndex = currentDayIndex,
-                modifier = Modifier.fillMaxWidth(),
-                containerColor = VoyantColors.Background,
-                contentColor = VoyantColors.Primary
-            ) {
-                sampleDays.forEachIndexed { index, day ->
-                    Tab(
-                        selected = currentDayIndex == index,
-                        onClick = { currentDayIndex = index }
-                    ) {
-                        DayTab(day = day, isSelected = currentDayIndex == index)
+            item {
+                TripOverviewCard(
+                    budget = trip.budget,
+                    spent = trip.spent
+                )
+            }
+
+            item {
+                ScrollableTabRow(
+                    selectedTabIndex = currentDayIndex,
+                    modifier = Modifier.fillMaxWidth(),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = VoyantColors.Primary
+                ) {
+                    days.forEachIndexed { index, date ->
+                        Tab(
+                            selected = currentDayIndex == index,
+                            onClick = { currentDayIndex = index }
+                        ) {
+                            DayTab(
+                                date = date,
+                                isSelected = currentDayIndex == index
+                            )
+                        }
                     }
                 }
             }
 
-            // Activities list
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(activities) { activity ->
-                    ActivityCard(
-                        activity = activity,
-                        timeFormatter = timeFormatter
-                    )
+            items(
+                activities.filter { activity ->
+                    isSameDay(activity.startTime.toLocalDate(), days[currentDayIndex])
                 }
+            ) { activity ->
+                ActivityCard(activity = activity)
             }
         }
     }
@@ -145,20 +141,18 @@ fun TripDetailsScreen(
                     conflictingActivity = conflict
                     showTimeConflictDialog = true
                 } else {
-                    activities = activities + newActivity
                     showAddActivityDialog = false
                 }
-            }
+            },
+            selectedDate = days[currentDayIndex]
         )
     }
 
     if (showTimeConflictDialog && conflictingActivity != null) {
         TimeConflictDialog(
             conflictingActivity = conflictingActivity!!,
-            timeFormatter = timeFormatter,
             onDismiss = { showTimeConflictDialog = false },
             onConfirm = {
-                activities = activities + (conflictingActivity ?: return@TimeConflictDialog)
                 showTimeConflictDialog = false
                 showAddActivityDialog = false
             }
@@ -167,47 +161,108 @@ fun TripDetailsScreen(
 }
 
 @Composable
-private fun DayTab(day: Date, isSelected: Boolean) {
-    val dayFormatter = remember {
-        SimpleDateFormat("EEE", Locale.getDefault()).apply {
-            timeZone = TimeZone.getDefault()
-        }
-    }
-    val dateFormatter = remember {
-        SimpleDateFormat("MMM d", Locale.getDefault()).apply {
-            timeZone = TimeZone.getDefault()
-        }
-    }
+private fun TripOverviewCard(
+    budget: Double,
+    spent: Double
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                "Trip Overview",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                BudgetInfoColumn(
+                    title = "Total Budget",
+                    amount = budget
+                )
+                BudgetInfoColumn(
+                    title = "Spent",
+                    amount = spent
+                )
+                BudgetInfoColumn(
+                    title = "Remaining",
+                    amount = budget - spent,
+                    isNegative = spent > budget
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LinearProgressIndicator(
+                progress = (spent / budget).toFloat().coerceIn(0f, 1f),
+                modifier = Modifier.fillMaxWidth(),
+                color = if (spent > budget)
+                    VoyantColors.Error else VoyantColors.Primary,
+                trackColor = VoyantColors.Primary.copy(alpha = 0.1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun BudgetInfoColumn(
+    title: String,
+    amount: Double,
+    isNegative: Boolean = false
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = VoyantColors.TextSecondary
+        )
+        Text(
+            "$${String.format("%.2f", amount)}",
+            style = MaterialTheme.typography.titleMedium,
+            color = when {
+                isNegative -> VoyantColors.Error
+                else -> VoyantColors.Primary
+            },
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun DayTab(
+    date: LocalDate,
+    isSelected: Boolean
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(16.dp)
     ) {
         Text(
-            text = dayFormatter.format(day),
+            text = DateTimeUtils.formatDate(date),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = if (isSelected) VoyantColors.Primary else VoyantColors.TextSecondary
-        )
-        Text(
-            text = dateFormatter.format(day),
-            style = MaterialTheme.typography.bodySmall,
             color = if (isSelected) VoyantColors.Primary else VoyantColors.TextSecondary
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ActivityCard(
-    activity: TripActivity,
-    timeFormatter: SimpleDateFormat
-) {
+private fun ActivityCard(activity: TripActivity) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Row(
             modifier = Modifier
@@ -216,8 +271,8 @@ private fun ActivityCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = activity.type.icon(),
-                contentDescription = null,
+                imageVector = activity.type.getIcon(),
+                contentDescription = activity.type.getTitle(),
                 tint = VoyantColors.Primary,
                 modifier = Modifier.size(24.dp)
             )
@@ -231,8 +286,7 @@ private fun ActivityCard(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "${timeFormatter.format(activity.startTime)} - " +
-                            "${timeFormatter.format(activity.endTime)}",
+                    text = DateTimeUtils.formatTimeRange(activity.startTime, activity.endTime),
                     style = MaterialTheme.typography.bodyMedium,
                     color = VoyantColors.TextSecondary
                 )
@@ -241,6 +295,13 @@ private fun ActivityCard(
                         text = activity.location,
                         style = MaterialTheme.typography.bodySmall,
                         color = VoyantColors.TextSecondary
+                    )
+                }
+                if (activity.bookingReference != null) {
+                    Text(
+                        text = "Booking: ${activity.bookingReference}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = VoyantColors.Primary
                     )
                 }
             }
@@ -258,7 +319,8 @@ private fun ActivityCard(
 @Composable
 private fun AddActivityDialog(
     onDismiss: () -> Unit,
-    onAdd: (TripActivity) -> Unit
+    onAdd: (TripActivity) -> Unit,
+    selectedDate: LocalDate
 ) {
     var title by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(ActivityType.SIGHTSEEING) }
@@ -294,13 +356,12 @@ private fun AddActivityDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Activity Type Dropdown
                 ExposedDropdownMenuBox(
                     expanded = false,
                     onExpandedChange = { }
                 ) {
                     OutlinedTextField(
-                        value = type.name,
+                        value = type.getTitle(),
                         onValueChange = { },
                         readOnly = true,
                         label = { Text("Activity Type") },
@@ -337,17 +398,8 @@ private fun AddActivityDialog(
                     }
                     Button(
                         onClick = {
-                            val calendar = Calendar.getInstance()
-
-                            // Set start time
-                            calendar.set(Calendar.HOUR_OF_DAY, startHour)
-                            calendar.set(Calendar.MINUTE, startMinute)
-                            val startTime = calendar.time
-
-                            // Set end time
-                            calendar.set(Calendar.HOUR_OF_DAY, endHour)
-                            calendar.set(Calendar.MINUTE, endMinute)
-                            val endTime = calendar.time
+                            val startTime = selectedDate.atTime(startHour, startMinute)
+                            val endTime = selectedDate.atTime(endHour, endMinute)
 
                             val newActivity = TripActivity(
                                 id = UUID.randomUUID().toString(),
@@ -373,7 +425,6 @@ private fun AddActivityDialog(
 @Composable
 private fun TimeConflictDialog(
     conflictingActivity: TripActivity,
-    timeFormatter: SimpleDateFormat,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -383,8 +434,7 @@ private fun TimeConflictDialog(
         text = {
             Text(
                 "This time conflicts with: ${conflictingActivity.title}\n" +
-                        "(${timeFormatter.format(conflictingActivity.startTime)} - " +
-                        "${timeFormatter.format(conflictingActivity.endTime)})\n\n" +
+                        "(${DateTimeUtils.formatTimeRange(conflictingActivity.startTime, conflictingActivity.endTime)})\n\n" +
                         "Would you like to add it anyway?"
             )
         },
@@ -401,56 +451,27 @@ private fun TimeConflictDialog(
     )
 }
 
+private fun getDaysForTrip(trip: Trip): List<LocalDate> {
+    val days = mutableListOf<LocalDate>()
+    var currentDate = trip.startDate
+    while (!currentDate.isAfter(trip.endDate)) {
+        days.add(currentDate)
+        currentDate = currentDate.plusDays(1)
+    }
+    return days
+}
+
+private fun isSameDay(date1: LocalDate, date2: LocalDate): Boolean {
+    return date1 == date2
+}
+
 private fun checkTimeConflict(newActivity: TripActivity, existingActivities: List<TripActivity>): TripActivity? {
     return existingActivities.find { existing ->
-        (newActivity.startTime.time in existing.startTime.time..existing.endTime.time) ||
-                (newActivity.endTime.time in existing.startTime.time..existing.endTime.time) ||
-                (existing.startTime.time in newActivity.startTime.time..newActivity.endTime.time)
+        isSameDay(existing.startTime.toLocalDate(), newActivity.startTime.toLocalDate()) &&
+                (
+                        (newActivity.startTime.isAfter(existing.startTime) && newActivity.startTime.isBefore(existing.endTime)) ||
+                                (newActivity.endTime.isAfter(existing.startTime) && newActivity.endTime.isBefore(existing.endTime)) ||
+                                (existing.startTime.isAfter(newActivity.startTime) && existing.startTime.isBefore(newActivity.endTime))
+                        )
     }
-}
-
-// Sample data
-private val sampleDays = run {
-    val calendar = Calendar.getInstance()
-    List(7) { index ->
-        calendar.apply {
-            add(Calendar.DAY_OF_MONTH, if (index == 0) 0 else 1)
-        }.time
-    }
-}
-
-private val sampleActivities = run {
-    val calendar = Calendar.getInstance()
-    listOf(
-        TripActivity(
-            "1",
-            "Eiffel Tower Visit",
-            ActivityType.SIGHTSEEING,
-            calendar.apply {
-                set(Calendar.HOUR_OF_DAY, 10)
-                set(Calendar.MINUTE, 0)
-            }.time,
-            calendar.apply {
-                set(Calendar.HOUR_OF_DAY, 12)
-                set(Calendar.MINUTE, 0)
-            }.time,
-            "Champ de Mars, 5 Avenue Anatole France",
-            25.0
-        ),
-        TripActivity(
-            "2",
-            "Lunch at Le Cheval d'Or",
-            ActivityType.RESTAURANT,
-            calendar.apply {
-                set(Calendar.HOUR_OF_DAY, 12)
-                set(Calendar.MINUTE, 30)
-            }.time,
-            calendar.apply {
-                set(Calendar.HOUR_OF_DAY, 14)
-                set(Calendar.MINUTE, 0)
-            }.time,
-            "21 Rue de la Villette",
-            45.0
-        )
-    )
 }
