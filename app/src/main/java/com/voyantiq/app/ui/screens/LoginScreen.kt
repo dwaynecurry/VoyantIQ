@@ -18,11 +18,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.voyantiq.app.BuildConfig
-import com.voyantiq.app.data.auth.AuthState
-import com.voyantiq.app.ui.viewmodel.AuthViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+// State class for login form
 data class LoginFormState(
     val email: String = "",
     val emailError: String? = null,
@@ -31,6 +30,7 @@ data class LoginFormState(
     val showPassword: Boolean = false
 )
 
+// UI state for login
 sealed class LoginUiState {
     object Initial : LoginUiState()
     object Loading : LoginUiState()
@@ -42,32 +42,13 @@ sealed class LoginUiState {
 fun LoginScreen(
     onLoginComplete: () -> Unit,
     onBackClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit,
-    viewModel: AuthViewModel = hiltViewModel()
+    onForgotPasswordClick: () -> Unit
 ) {
     var formState by remember { mutableStateOf(LoginFormState()) }
     var uiState by remember { mutableStateOf<LoginUiState>(LoginUiState.Initial) }
-    val authState by viewModel.authState.collectAsState()
+    val scope = rememberCoroutineScope()
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
-
-    LaunchedEffect(authState) {
-        when (authState) {
-            is AuthState.Authenticated -> {
-                uiState = LoginUiState.Success
-                onLoginComplete()
-            }
-            is AuthState.Error -> {
-                uiState = LoginUiState.Error((authState as AuthState.Error).message)
-                errorMessage = (authState as AuthState.Error).message
-                showErrorDialog = true
-            }
-            is AuthState.Loading -> {
-                uiState = LoginUiState.Loading
-            }
-            else -> {}
-        }
-    }
 
     // Error Dialog
     if (showErrorDialog) {
@@ -171,4 +152,118 @@ fun LoginScreen(
             },
             label = { Text("Password") },
             placeholder = { Text("Enter your password", color = Color.Gray.copy(alpha = 0.5f)) },
-            visualTransformation = if (formState.showPasswor<span class="ml-2" /><span class="inline-block w-3 h-3 rounded-full bg-neutral-a12 align-middle mb-[0.1rem]" />
+            visualTransformation = if (formState.showPassword)
+                VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            trailingIcon = {
+                IconButton(
+                    onClick = {
+                        formState = formState.copy(showPassword = !formState.showPassword)
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (formState.showPassword)
+                            Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = if (formState.showPassword)
+                            "Hide password" else "Show password"
+                    )
+                }
+            },
+            isError = formState.passwordError != null,
+            supportingText = { formState.passwordError?.let { Text(it) } },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = uiState !is LoginUiState.Loading,
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Forgot Password Link
+        TextButton(
+            onClick = onForgotPasswordClick,
+            modifier = Modifier.align(Alignment.End),
+            enabled = uiState !is LoginUiState.Loading
+        ) {
+            Text(
+                "Forgot Password?",
+                color = Color(0xFF0072BC)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Login Button
+        Button(
+            onClick = {
+                scope.launch {
+                    try {
+                        uiState = LoginUiState.Loading
+                        // Simulate network call
+                        delay(2000)
+                        if (validateForm()) {
+                            uiState = LoginUiState.Success
+                            onLoginComplete()
+                        } else {
+                            throw Exception("Invalid email or password")
+                        }
+                    } catch (e: Exception) {
+                        uiState = LoginUiState.Error(e.message ?: "An unknown error occurred")
+                        errorMessage = e.message ?: "An unknown error occurred"
+                        showErrorDialog = true
+                    }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF0072BC)
+            ),
+            enabled = isFormValid() && uiState !is LoginUiState.Loading
+        ) {
+            if (uiState is LoginUiState.Loading) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Text("Sign In")
+            }
+        }
+
+        // Error message
+        AnimatedVisibility(visible = uiState is LoginUiState.Error) {
+            Text(
+                text = (uiState as? LoginUiState.Error)?.message ?: "",
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+}
+
+private fun validateEmail(email: String): String? {
+    return when {
+        email.isBlank() -> "Email is required"
+        !email.matches(Regex("^[A-Za-z0-9+_.-]+@(.+)\$")) -> "Invalid email format"
+        else -> null
+    }
+}
+
+private fun validatePassword(password: String): String? {
+    return when {
+        password.isBlank() -> "Password is required"
+        password.length < 8 -> "Password must be at least 8 characters"
+        else -> null
+    }
+}
+
+private fun validateForm(): Boolean {
+    // Add comprehensive form validation
+    return true
+}
+
+private fun isFormValid(): Boolean {
+    // Add comprehensive form validation
+    return true
+}

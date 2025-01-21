@@ -5,5 +5,6 @@ data class User(
     val email: String,
     val firstName: String,
     val lastName: String,
-    val phoneNumber: String
+    val phoneNumber: String,
+    val preferences: UserPreferences = UserPreferences() // Add this line
 )
