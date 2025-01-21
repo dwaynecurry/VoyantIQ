@@ -1,3 +1,4 @@
+// app/build.gradle
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -13,13 +14,11 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures {
         compose = true
-        buildConfig = true  // Enable BuildConfig generation
+        buildConfig = true
     }
 
     composeOptions {
@@ -33,14 +32,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("Boolean", "DEBUG_MODE", "false")
         }
         debug {
-            buildConfigField("Boolean", "DEBUG_MODE", "true")
+            isDebuggable = true
         }
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -57,6 +56,8 @@ android {
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.01.00")
     implementation(composeBom)
+
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")

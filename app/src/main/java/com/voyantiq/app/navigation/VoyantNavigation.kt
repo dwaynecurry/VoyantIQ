@@ -5,222 +5,122 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.voyantiq.app.ui.screens.*
 
 @Composable
 fun VoyantNavigation(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController
 ) {
     NavHost(
         navController = navController,
-        startDestination = "splash"
+        startDestination = NavigationRoutes.Splash.route
     ) {
-        // Splash Screen
-        composable("splash") {
+        // Authentication Flow
+        composable(NavigationRoutes.Splash.route) {
             SplashScreen(
                 onSplashComplete = {
-                    navController.navigate("welcome") {
-                        popUpTo("splash") { inclusive = true }
+                    navController.navigate(NavigationRoutes.Welcome.route) {
+                        popUpTo(NavigationRoutes.Splash.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        // Welcome Screen
-        composable("welcome") {
+        composable(NavigationRoutes.Welcome.route) {
             WelcomeScreen(
                 onGetStartedClick = {
-                    navController.navigate("signup")
+                    navController.navigate(NavigationRoutes.SignUp.route)
                 },
                 onLoginClick = {
-                    navController.navigate("login")
-                },
-                onDevBypassClick = {
-                    // Navigate directly to home screen, bypassing authentication
-                    navController.navigate("home") {
-                        popUpTo("welcome") { inclusive = true }
-                    }
+                    navController.navigate(NavigationRoutes.Login.route)
                 }
             )
         }
 
-        // Sign Up Screen
-        composable("signup") {
-            SignUpScreen(
-                onSignUpComplete = {
-                    navController.navigate("email_verification")
-                },
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onTermsClick = {
-                    navController.navigate("terms")
-                },
-                onPrivacyClick = {
-                    navController.navigate("privacy")
-                }
-            )
-        }
-
-        // Login Screen
-        composable("login") {
-            LoginScreen(
-                onLoginComplete = {
-                    navController.navigate("home") {
-                        popUpTo("welcome") { inclusive = true }
-                    }
-                },
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onForgotPasswordClick = {
-                    navController.navigate("forgot_password")
-                }
-            )
-        }
-
-        // Email Verification Screen
-        composable(
-            route = "email_verification/{email}",
-            arguments = listOf(navArgument("email") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val email = backStackEntry.arguments?.getString("email") ?: ""
-            EmailVerificationScreen(
-                email = email,
-                onVerificationComplete = {
-                    navController.navigate("user_preferences") {
-                        popUpTo("welcome") { inclusive = true }
-                    }
-                },
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onResendCode = {
-                    // Handle resend code
-                }
-            )
-        }
-
-        // Forgot Password Screen
-        composable("forgot_password") {
-            ForgotPasswordScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onResetSent = {
-                    navController.navigate("login") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        // Terms Screen
-        composable("terms") {
-            TermsScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        // Privacy Screen
-        composable("privacy") {
-            PrivacyScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        // User Preferences Screen
-        composable("user_preferences") {
-            ModernUserPreferencesScreen(
-                onPreferencesSaved = {
-                    navController.navigate("home") {
-                        popUpTo("welcome") { inclusive = true }
-                    }
-                },
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        // Home Screen
-        composable("home") {
+        // Main Navigation Screens
+        composable(NavigationRoutes.Home.route) {
             HomeScreen(
-                onNewTripClick = {
-                    navController.navigate("trip_planning")
-                },
                 onTripClick = { tripId ->
-                    navController.navigate("trip_details/$tripId")
+                    navController.navigate(NavigationRoutes.TripDetails.createRoute(tripId))
+                },
+                onNewTripClick = {
+                    navController.navigate(NavigationRoutes.TripPlanning.route)
+                },
+                onSearchClick = {
+                    navController.navigate(NavigationRoutes.Search.route)
                 },
                 onProfileClick = {
-                    navController.navigate("profile")
+                    navController.navigate(NavigationRoutes.Profile.route)
                 }
             )
         }
 
-        // Trip Planning Screen
-        composable("trip_planning") {
-            TripPlanningScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onNextClick = { tripDetails ->
-                    navController.navigate("itinerary_generation")
+        composable(NavigationRoutes.Search.route) {
+            SearchScreen(
+                onDestinationClick = { destinationId ->
+                    navController.navigate(NavigationRoutes.Destination.createRoute(destinationId))
                 }
             )
         }
 
-        // Trip Details Screen
-        composable(
-            route = "trip_details/{tripId}",
-            arguments = listOf(navArgument("tripId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val tripId = backStackEntry.arguments?.getString("tripId")
-            TripDetailsScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onEditClick = {
-                    // Navigate to edit trip screen
+        composable(NavigationRoutes.Bookings.route) {
+            BookingsScreen(
+                onBookingClick = { bookingId ->
+                    navController.navigate(NavigationRoutes.BookingDetails.createRoute(bookingId))
                 }
             )
         }
 
-        // Profile Screen
-        composable("profile") {
+        composable(NavigationRoutes.Profile.route) {
             ProfileScreen(
                 onBackClick = {
                     navController.popBackStack()
                 },
                 onEditPreferencesClick = {
-                    navController.navigate("user_preferences")
+                    navController.navigate(NavigationRoutes.Preferences.route)
+                },
+                onPaymentMethodsClick = {
+                    navController.navigate(NavigationRoutes.PaymentMethods.route)
+                },
+                onSettingsClick = {
+                    navController.navigate(NavigationRoutes.Settings.route)
                 },
                 onLogoutClick = {
-                    navController.navigate("welcome") {
+                    navController.navigate(NavigationRoutes.Welcome.route) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
 
-        // Itinerary Generation Screen
-        composable("itinerary_generation") {
-            ItineraryGenerationScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onConfirmClick = {
-                    navController.navigate("home") {
-                        popUpTo("home") { inclusive = true }
-                    }
+        // Destination details
+        composable(
+            route = NavigationRoutes.Destination.route,
+            arguments = listOf(navArgument("id") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val destinationId = backStackEntry.arguments?.getString("id") ?: return@composable
+            DestinationScreen(
+                destinationId = destinationId,
+                onBackClick = { navController.popBackStack() },
+                onPlanTripClick = {
+                    navController.navigate(NavigationRoutes.TripPlanning.route)
                 }
             )
         }
+
+        // Booking details
+        composable(
+            route = NavigationRoutes.BookingDetails.route,
+            arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: return@composable
+            BookingDetailsScreen(
+                bookingId = bookingId,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // Keep your existing routes...
     }
 }
