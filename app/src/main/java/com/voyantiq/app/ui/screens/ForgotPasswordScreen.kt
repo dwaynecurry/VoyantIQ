@@ -2,15 +2,18 @@ package com.voyantiq.app.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.voyantiq.app.ui.theme.VoyantColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -27,7 +30,9 @@ fun ForgotPasswordScreen(
     onResetSent: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
+    var emailError by remember { mutableStateOf<String?>(null) }
     var uiState by remember { mutableStateOf<ResetPasswordUiState>(ResetPasswordUiState.Initial) }
+    var showConfirmationDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Column(
@@ -47,13 +52,16 @@ fun ForgotPasswordScreen(
                 onClick = onBackClick,
                 enabled = uiState !is ResetPasswordUiState.Loading
             ) {
-                Text("←")
+                Text(
+                    "←",
+                    color = VoyantColors.Primary
+                )
             }
             Text(
                 text = "Reset Password",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0072BC)
+                color = VoyantColors.Primary
             )
             Box(modifier = Modifier.size(48.dp))
         }
@@ -64,7 +72,8 @@ fun ForgotPasswordScreen(
         Text(
             text = "Enter your email address and we'll send you instructions to reset your password.",
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 32.dp)
+            modifier = Modifier.padding(horizontal = 32.dp),
+            color = VoyantColors.TextSecondary
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -72,12 +81,37 @@ fun ForgotPasswordScreen(
         // Email Input
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = {
+                email = it
+                emailError = validateEmail(it)
+            },
             label = { Text("Email Address") },
-            placeholder = { Text("Enter your email") },
+            placeholder = {
+                Text(
+                    "Enter your email",
+                    color = VoyantColors.PlaceholderText
+                )
+            },
             singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            isError = emailError != null,
+            supportingText = {
+                emailError?.let {
+                    Text(
+                        it,
+                        color = VoyantColors.Error
+                    )
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
-            enabled = uiState !is ResetPasswordUiState.Loading
+            enabled = uiState !is ResetPasswordUiState.Loading,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = VoyantColors.Primary,
+                unfocusedBorderColor = VoyantColors.Divider,
+                disabledBorderColor = VoyantColors.Disabled,
+                focusedLabelColor = VoyantColors.Primary,
+                unfocusedLabelColor = VoyantColors.TextSecondary
+            )
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -86,44 +120,43 @@ fun ForgotPasswordScreen(
         Button(
             onClick = {
                 scope.launch {
-                    uiState = ResetPasswordUiState.Loading
-                    delay(1500) // Simulate network request
-                    if (email.contains("@")) {
-                        uiState = ResetPasswordUiState.EmailSent
-                        onResetSent()
-                    } else {
-                        uiState = ResetPasswordUiState.Error("Invalid email address")
+                    emailError = validateEmail(email)
+                    if (emailError == null) {
+                        uiState = ResetPasswordUiState.Loading
+                        try {
+                            delay(1500) // Simulate network request
+                            uiState = ResetPasswordUiState.EmailSent
+                            showConfirmationDialog = true
+                        } catch (e: Exception) {
+                            uiState = ResetPasswordUiState.Error(
+                                e.message ?: "An error occurred. Please try again."
+                            )
+                        }
                     }
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
-            enabled = email.isNotBlank() && uiState !is ResetPasswordUiState.Loading,
+            enabled = email.isNotBlank() &&
+                    emailError == null &&
+                    uiState !is ResetPasswordUiState.Loading,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF0072BC)
+                containerColor = VoyantColors.Primary,
+                disabledContainerColor = VoyantColors.Disabled
             )
         ) {
             if (uiState is ResetPasswordUiState.Loading) {
                 CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = VoyantColors.Background,
                     modifier = Modifier.size(24.dp)
                 )
             } else {
-                Text("Send Reset Link")
+                Text(
+                    "Send Reset Link",
+                    color = VoyantColors.Background
+                )
             }
-        }
-
-        // Success Message
-        AnimatedVisibility(
-            visible = uiState is ResetPasswordUiState.EmailSent,
-            enter = fadeIn() + slideInVertically()
-        ) {
-            Text(
-                text = "Reset link sent! Check your email.",
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 16.dp)
-            )
         }
 
         // Error Message
@@ -133,9 +166,51 @@ fun ForgotPasswordScreen(
         ) {
             Text(
                 text = (uiState as? ResetPasswordUiState.Error)?.message ?: "",
-                color = MaterialTheme.colorScheme.error,
+                color = VoyantColors.Error,
                 modifier = Modifier.padding(top = 16.dp)
             )
         }
+    }
+
+    // Confirmation Dialog
+    if (showConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { },
+            containerColor = VoyantColors.Background,
+            titleContentColor = VoyantColors.Primary,
+            textContentColor = VoyantColors.TextPrimary,
+            title = { Text("Check Your Email") },
+            text = {
+                Text(
+                    "We've sent password reset instructions to $email. " +
+                            "Please check your email and follow the instructions to reset your password.",
+                    textAlign = TextAlign.Center
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmationDialog = false
+                        onResetSent()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = VoyantColors.Primary
+                    )
+                ) {
+                    Text(
+                        "OK",
+                        color = VoyantColors.Background
+                    )
+                }
+            }
+        )
+    }
+}
+
+private fun validateEmail(email: String): String? {
+    return when {
+        email.isBlank() -> "Email is required"
+        !email.matches(Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) -> "Invalid email format"
+        else -> null
     }
 }

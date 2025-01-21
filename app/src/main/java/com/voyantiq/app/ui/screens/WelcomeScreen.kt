@@ -11,12 +11,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.voyantiq.app.BuildConfig
 import com.voyantiq.app.R
 
 @Composable
 fun WelcomeScreen(
     onGetStartedClick: () -> Unit,
-    onLoginClick: () -> Unit
+    onLoginClick: () -> Unit,
+    onDevBypassClick: () -> Unit = {} // Add this parameter
 ) {
     Column(
         modifier = Modifier
@@ -77,6 +79,22 @@ fun WelcomeScreen(
                 "Already have an account? Sign in",
                 color = Color(0xFF0072BC)
             )
+        }
+
+        // Dev Bypass Button (only shows in debug builds)
+        if (BuildConfig.DEBUG) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Button(
+                onClick = onDevBypassClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Green
+                )
+            ) {
+                Text("DEV BYPASS", color = Color.White)
+            }
         }
     }
 }

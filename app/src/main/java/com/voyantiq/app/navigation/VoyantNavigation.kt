@@ -36,6 +36,12 @@ fun VoyantNavigation(
                 },
                 onLoginClick = {
                     navController.navigate("login")
+                },
+                onDevBypassClick = {
+                    // Navigate directly to home screen, bypassing authentication
+                    navController.navigate("home") {
+                        popUpTo("welcome") { inclusive = true }
+                    }
                 }
             )
         }
@@ -43,8 +49,8 @@ fun VoyantNavigation(
         // Sign Up Screen
         composable("signup") {
             SignUpScreen(
-                onSignUpComplete = { email ->
-                    navController.navigate("email_verification/${email}")
+                onSignUpComplete = {
+                    navController.navigate("email_verification")
                 },
                 onBackClick = {
                     navController.popBackStack()
@@ -217,8 +223,4 @@ fun VoyantNavigation(
             )
         }
     }
-}
-
-fun SignUpScreen(onSignUpComplete: (Any?) -> Unit, onBackClick: () -> Unit, onTermsClick: () -> Unit, onPrivacyClick: () -> Unit) {
-
 }
