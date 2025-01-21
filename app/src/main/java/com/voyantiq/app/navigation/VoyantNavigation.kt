@@ -27,6 +27,7 @@ fun VoyantNavigation(
             )
         }
 
+        // In your VoyantNavigation.kt, update the welcome screen navigation
         composable(NavigationRoutes.Welcome.route) {
             WelcomeScreen(
                 onGetStartedClick = {
@@ -34,6 +35,11 @@ fun VoyantNavigation(
                 },
                 onLoginClick = {
                     navController.navigate(NavigationRoutes.Login.route)
+                },
+                onDevBypassClick = {
+                    navController.navigate(NavigationRoutes.Home.route) {
+                        popUpTo(NavigationRoutes.Welcome.route) { inclusive = true }
+                    }
                 }
             )
         }

@@ -13,12 +13,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.voyantiq.app.BuildConfig
 import com.voyantiq.app.R
+import com.voyantiq.app.ui.theme.VoyantColors
 
 @Composable
 fun WelcomeScreen(
     onGetStartedClick: () -> Unit,
     onLoginClick: () -> Unit,
-    onDevBypassClick: () -> Unit = {} // Add this parameter
+    onDevBypassClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -41,7 +42,7 @@ fun WelcomeScreen(
             text = "VOYANT IQ",
             fontSize = 40.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF0072BC)
+            color = VoyantColors.Primary
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -50,7 +51,7 @@ fun WelcomeScreen(
         Text(
             text = "See Your Journey Ahead",
             fontSize = 20.sp,
-            color = Color(0xFF0072BC)
+            color = VoyantColors.Primary
         )
 
         Spacer(modifier = Modifier.height(48.dp))
@@ -62,7 +63,7 @@ fun WelcomeScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 32.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF0072BC)
+                containerColor = VoyantColors.Primary
             )
         ) {
             Text("Get Started")
@@ -77,11 +78,11 @@ fun WelcomeScreen(
         ) {
             Text(
                 "Already have an account? Sign in",
-                color = Color(0xFF0072BC)
+                color = VoyantColors.Primary
             )
         }
 
-        // Dev Bypass Button (only shows in debug builds)
+        // Dev Bypass Button
         if (BuildConfig.DEBUG) {
             Spacer(modifier = Modifier.height(32.dp))
             Button(

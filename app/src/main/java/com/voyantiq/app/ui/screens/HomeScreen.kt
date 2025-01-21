@@ -19,6 +19,15 @@ import com.voyantiq.app.ui.theme.VoyantColors
 import java.text.SimpleDateFormat
 import java.util.*
 
+private fun getGreeting(): String {
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 0..11 -> "Good Morning"
+        in 12..16 -> "Good Afternoon"
+        in 17..23 -> "Good Evening"
+        else -> "Welcome"
+    }
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -85,7 +94,7 @@ fun HomeScreen(
 
                 // Welcome message
                 Text(
-                    "Welcome back,",
+                    "${getGreeting()},",
                     color = Color.White.copy(alpha = 0.9f),
                     fontSize = 16.sp
                 )
