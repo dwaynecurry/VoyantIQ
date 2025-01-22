@@ -14,16 +14,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.voyantiq.app.BuildConfig
+import com.voyantiq.app.DevModeManager
 import com.voyantiq.app.ui.theme.VoyantColors
 import com.voyantiq.app.data.model.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onTripClick: (String) -> Unit,
-    onNewTripClick: () -> Unit,
-    onSearchClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    onEditPreferencesClick: () -> Unit,
+    onPaymentMethodsClick: () -> Unit
 ) {
     val userName = "Dwayne"
     val greeting = getGreeting()
@@ -31,6 +32,11 @@ fun HomeScreen(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
+        // Dev Mode Banner
+        if (BuildConfig.DEBUG && DevModeManager.isDevModeEnabled) {
+            DevModeBanner()
+        }
+
         // Header
         Box(
             modifier = Modifier
@@ -55,14 +61,14 @@ fun HomeScreen(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        IconButton(onClick = onSearchClick) {
+                        IconButton(onClick = onEditPreferencesClick) {
                             Icon(
                                 Icons.Default.Search,
                                 contentDescription = "Search",
                                 tint = Color.White
                             )
                         }
-                        IconButton(onClick = onProfileClick) {
+                        IconButton(onClick = onPaymentMethodsClick) {
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = "Profile",
@@ -96,7 +102,7 @@ fun HomeScreen(
                 .padding(16.dp)
         ) {
             item {
-                QuickActionCard(onNewTripClick)
+                QuickActionCard(onNewTripClick = onEditPreferencesClick)
             }
 
             item {
@@ -112,10 +118,37 @@ fun HomeScreen(
             items(SampleData.sampleTrips) { trip ->
                 TripCard(
                     trip = trip,
-                    onClick = { onTripClick(trip.id) }
+                    onClick = { /* Handle trip click */ }
                 )
             }
+
+            // Logout button at the bottom
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onLogoutClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Logout")
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun DevModeBanner() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.Yellow)
+            .padding(8.dp)
+    ) {
+        Text(
+            text = "DEV MODE ACTIVE",
+            color = Color.Black,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -229,9 +262,9 @@ private fun TripCard(
 
 private fun getGreeting(): String {
     return when (java.time.LocalTime.now().hour) {
-        in 0..11 -> "Good morning"
-        in 12..16 -> "Good afternoon"
-        in 17..20 -> "Good evening"
-        else -> "Good night"
+        in 0..11 -> "Good Morning"
+        in 12..16 -> "Good Afternoon"
+        in 17..22 -> "Good Evening"
+        else -> "Welcome"
     }
 }

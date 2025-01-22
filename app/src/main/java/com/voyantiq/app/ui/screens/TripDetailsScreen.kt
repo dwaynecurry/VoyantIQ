@@ -23,6 +23,7 @@ import java.util.*
 fun TripDetailsScreen(
     tripId: String,
     onBackClick: () -> Unit,
+    onConfirmClick: () -> Unit,  // Make sure this matches
     onEditClick: () -> Unit
 ) {
     var currentDayIndex by remember { mutableStateOf(0) }

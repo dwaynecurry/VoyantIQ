@@ -29,7 +29,8 @@ data class LoginFormState(
 fun LoginScreen(
     onLoginComplete: () -> Unit,
     onBackClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit
+    onForgotPasswordClick: () -> Unit,
+    onSignUpClick: () -> Unit  // Added this parameter
 ) {
     var formState by remember { mutableStateOf(LoginFormState()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -163,6 +164,17 @@ fun LoginScreen(
             } else {
                 Text("Sign In")
             }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Sign Up Link (Added this section)
+        TextButton(
+            onClick = onSignUpClick,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading
+        ) {
+            Text("Don't have an account? Sign Up")
         }
 
         // Error message

@@ -1,5 +1,6 @@
 package com.voyantiq.app.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,15 +12,18 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.voyantiq.app.BuildConfig
+import com.voyantiq.app.DevModeManager
 import com.voyantiq.app.R
+import com.voyantiq.app.navigation.NavigationRoutes
 import com.voyantiq.app.ui.theme.VoyantColors
 
 @Composable
 fun WelcomeScreen(
+    navController: NavController,
     onGetStartedClick: () -> Unit,
-    onLoginClick: () -> Unit,
-    onDevBypassClick: () -> Unit = {}
+    onLoginClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -86,7 +90,23 @@ fun WelcomeScreen(
         if (BuildConfig.DEBUG) {
             Spacer(modifier = Modifier.height(32.dp))
             Button(
-                onClick = onDevBypassClick,
+                onClick = {
+                    Log.d("WelcomeScreen", "Dev Bypass Clicked")
+                    Log.d("WelcomeScreen", "Current Destination: ${navController.currentDestination?.route}")
+                    Log.d("WelcomeScreen", "Attempting to navigate to: ${NavigationRoutes.Home.route}")
+
+                    DevModeManager.enableDevMode()
+
+                    try {
+                        navController.navigate(NavigationRoutes.Home.route) {
+                            // Clear back stack to prevent going back to welcome screen
+                            popUpTo(NavigationRoutes.Welcome.route) { inclusive = true }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("WelcomeScreen", "Navigation Error", e)
+                        e.printStackTrace()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp),
