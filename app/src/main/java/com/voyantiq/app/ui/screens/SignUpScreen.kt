@@ -11,13 +11,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.text.font.FontWeight
+import com.voyantiq.app.utils.validateEmail
 
 data class SignUpFormState(
     val firstName: String = "",
@@ -43,10 +42,9 @@ data class SignUpFormState(
     val termsAccepted: Boolean = false,
     val termsError: String? = null
 )
-
 @Composable
 fun SignUpScreen(
-    onSignUpComplete: () -> Unit,
+    onSignUpComplete: (String) -> Unit,
     onBackClick: () -> Unit,
     onTermsClick: () -> Unit,
     onPrivacyClick: () -> Unit
@@ -70,19 +68,17 @@ fun SignUpScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Default.ArrowBack, "Back")
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
             Text(
                 "Create Account",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
-            // Spacer for alignment
-            Box(Modifier.width(48.dp))
+            Box(Modifier.width(48.dp)) // Spacer for alignment
         }
 
         Spacer(Modifier.height(24.dp))
-
         // Name Fields
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -126,7 +122,6 @@ fun SignUpScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Country Code Dropdown
             ExposedDropdownMenuBox(
                 expanded = false,
                 onExpandedChange = { },
@@ -143,7 +138,6 @@ fun SignUpScreen(
                 )
             }
 
-            // Phone Number
             OutlinedTextField(
                 value = formState.phoneNumber,
                 onValueChange = {
@@ -164,7 +158,6 @@ fun SignUpScreen(
         }
 
         Spacer(Modifier.height(16.dp))
-
         // Email
         OutlinedTextField(
             value = formState.email,
@@ -233,7 +226,6 @@ fun SignUpScreen(
         )
 
         Spacer(Modifier.height(8.dp))
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -327,14 +319,12 @@ fun SignUpScreen(
         }
 
         Spacer(Modifier.height(24.dp))
-
         // Sign Up Button
         Button(
             onClick = {
                 if (validateForm(formState)) {
                     isLoading = true
-                    // Handle sign up
-                    onSignUpComplete()
+                    onSignUpComplete(formState.email) // Pass the email here
                 } else {
                     showErrorDialog = true
                 }
@@ -397,7 +387,6 @@ fun SignUpScreen(
             }
         }
     }
-
     // Privacy Dialog
     if (showPrivacyDialog) {
         Dialog(onDismissRequest = { showPrivacyDialog = false }) {
@@ -428,8 +417,7 @@ fun SignUpScreen(
     }
 }
 
-// Validation Functions
-private fun validateName(name: String, fieldName: String): String? {
+fun validateName(name: String, fieldName: String): String? {
     return when {
         name.isBlank() -> "$fieldName is required"
         name.length < 2 -> "$fieldName must be at least 2 characters"
@@ -438,7 +426,7 @@ private fun validateName(name: String, fieldName: String): String? {
     }
 }
 
-private fun validatePhone(phone: String): String? {
+fun validatePhone(phone: String): String? {
     return when {
         phone.isBlank() -> "Phone number is required"
         phone.length != 10 -> "Phone number must be 10 digits"
@@ -447,15 +435,7 @@ private fun validatePhone(phone: String): String? {
     }
 }
 
-private fun validateEmail(email: String): String? {
-    return when {
-        email.isBlank() -> "Email is required"
-        !email.matches(Regex("^[A-Za-z0-9+_.-]+@(.+)$")) -> "Invalid email format"
-        else -> null
-    }
-}
-
-private fun validatePassword(password: String): String? {
+fun validatePassword(password: String): String? {
     return when {
         password.isBlank() -> "Password is required"
         password.length < 8 -> "Password must be at least 8 characters"
@@ -467,7 +447,7 @@ private fun validatePassword(password: String): String? {
     }
 }
 
-private fun validateStreetAddress(address: String): String? {
+fun validateStreetAddress(address: String): String? {
     return when {
         address.isBlank() -> "Street address is required"
         address.length < 5 -> "Please enter a valid street address"
@@ -475,7 +455,7 @@ private fun validateStreetAddress(address: String): String? {
     }
 }
 
-private fun validateCity(city: String): String? {
+fun validateCity(city: String): String? {
     return when {
         city.isBlank() -> "City is required"
         !city.matches(Regex("^[a-zA-Z ]+$")) -> "City can only contain letters"
@@ -483,7 +463,7 @@ private fun validateCity(city: String): String? {
     }
 }
 
-private fun validateState(state: String): String? {
+fun validateState(state: String): String? {
     return when {
         state.isBlank() -> "State is required"
         !state.matches(Regex("^[a-zA-Z ]+$")) -> "State can only contain letters"
@@ -491,7 +471,7 @@ private fun validateState(state: String): String? {
     }
 }
 
-private fun validateZipCode(zipCode: String): String? {
+fun validateZipCode(zipCode: String): String? {
     return when {
         zipCode.isBlank() -> "ZIP code is required"
         zipCode.length != 5 -> "ZIP code must be 5 digits"
@@ -500,7 +480,7 @@ private fun validateZipCode(zipCode: String): String? {
     }
 }
 
-private fun validateForm(state: SignUpFormState): Boolean {
+fun validateForm(state: SignUpFormState): Boolean {
     return validateName(state.firstName, "First name") == null &&
             validateName(state.lastName, "Last name") == null &&
             validatePhone(state.phoneNumber) == null &&

@@ -16,15 +16,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.voyantiq.app.BuildConfig
 import com.voyantiq.app.DevModeManager
+import com.voyantiq.app.data.model.SampleData
+import com.voyantiq.app.data.model.Trip
 import com.voyantiq.app.ui.theme.VoyantColors
-import com.voyantiq.app.data.model.*
+import com.voyantiq.app.data.model.DateTimeUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onLogoutClick: () -> Unit,
+    onNewTripClick: () -> Unit,
+    onTripClick: (String) -> Unit,
     onEditPreferencesClick: () -> Unit,
-    onPaymentMethodsClick: () -> Unit
+    onPaymentMethodsClick: () -> Unit,
+    onLogoutClick: () -> Unit
 ) {
     val userName = "Dwayne"
     val greeting = getGreeting()
@@ -34,7 +38,18 @@ fun HomeScreen(
     ) {
         // Dev Mode Banner
         if (BuildConfig.DEBUG && DevModeManager.isDevModeEnabled) {
-            DevModeBanner()
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Yellow)
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = "DEV MODE ACTIVE",
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         // Header
@@ -61,14 +76,14 @@ fun HomeScreen(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        IconButton(onClick = onEditPreferencesClick) {
+                        IconButton(onClick = { /* Search Action */ }) {
                             Icon(
                                 Icons.Default.Search,
                                 contentDescription = "Search",
                                 tint = Color.White
                             )
                         }
-                        IconButton(onClick = onPaymentMethodsClick) {
+                        IconButton(onClick = { /* Profile Action */ }) {
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = "Profile",
@@ -102,7 +117,7 @@ fun HomeScreen(
                 .padding(16.dp)
         ) {
             item {
-                QuickActionCard(onNewTripClick = onEditPreferencesClick)
+                QuickActionCard(onNewTripClick = onNewTripClick)
             }
 
             item {
@@ -118,37 +133,23 @@ fun HomeScreen(
             items(SampleData.sampleTrips) { trip ->
                 TripCard(
                     trip = trip,
-                    onClick = { /* Handle trip click */ }
+                    onClick = { onTripClick(trip.id) }
                 )
             }
 
-            // Logout button at the bottom
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = onLogoutClick,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
                 ) {
                     Text("Logout")
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DevModeBanner() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.Yellow)
-            .padding(8.dp)
-    ) {
-        Text(
-            text = "DEV MODE ACTIVE",
-            color = Color.Black,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
@@ -189,7 +190,6 @@ private fun QuickActionCard(onNewTripClick: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TripCard(
     trip: Trip,
@@ -262,9 +262,9 @@ private fun TripCard(
 
 private fun getGreeting(): String {
     return when (java.time.LocalTime.now().hour) {
-        in 0..11 -> "Good Morning"
-        in 12..16 -> "Good Afternoon"
-        in 17..22 -> "Good Evening"
-        else -> "Welcome"
+        in 0..11 -> "Good morning"
+        in 12..16 -> "Good afternoon"
+        in 17..20 -> "Good evening"
+        else -> "Good night"
     }
 }

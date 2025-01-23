@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.voyantiq.app.utils.validateEmail
+
 
 data class LoginFormState(
     val email: String = "",
@@ -204,13 +206,6 @@ fun LoginScreen(
     }
 }
 
-private fun validateEmail(email: String): String? {
-    return when {
-        email.isBlank() -> "Email is required"
-        !email.matches(Regex("^[A-Za-z0-9+_.-]+@(.+)$")) -> "Invalid email format"
-        else -> null
-    }
-}
 
 private fun validateLoginPassword(password: String): String? {
     return when {

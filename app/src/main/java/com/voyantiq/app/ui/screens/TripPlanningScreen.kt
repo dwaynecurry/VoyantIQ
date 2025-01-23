@@ -1,56 +1,27 @@
 package com.voyantiq.app.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.voyantiq.app.ui.theme.VoyantColors
-import com.voyantiq.app.data.model.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.rememberScrollState
+import com.voyantiq.app.data.model.TripPlanningState
+import com.voyantiq.app.data.model.TravelInterest
+import com.voyantiq.app.data.model.TravelStyle
+import com.voyantiq.app.network.NetworkModule
+import com.voyantiq.app.navigation.api.*
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-data class TripPlanningState(
-    val destination: String = "",
-    val startDate: LocalDate? = null,
-    val endDate: LocalDate? = null,
-    val budget: String = "",
-    val travelers: String = "1",
-    val travelStyle: TravelStyle = TravelStyle.BALANCED,
-    val interests: List<TravelInterest> = emptyList()
-)
-
-enum class TravelStyle {
-    LUXURY,
-    BALANCED,
-    BUDGET,
-    BACKPACKER;
-
-    fun getTitle(): String = name.lowercase().replaceFirstChar { it.uppercase() }
-}
-
-enum class TravelInterest {
-    CULTURE,
-    FOOD,
-    ADVENTURE,
-    RELAXATION,
-    SHOPPING,
-    NATURE,
-    HISTORY,
-    NIGHTLIFE;
-
-    fun getTitle(): String = name.lowercase().replaceFirstChar { it.uppercase() }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripPlanningScreen(
     onBackClick: () -> Unit,
@@ -59,6 +30,7 @@ fun TripPlanningScreen(
     var planningState by remember { mutableStateOf(TripPlanningState()) }
     var showDatePicker by remember { mutableStateOf(false) }
     var isSelectingStartDate by remember { mutableStateOf(true) }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -80,21 +52,28 @@ fun TripPlanningScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Destination
+            // Origin and Destination
+            OutlinedTextField(
+                value = planningState.origin,
+                onValueChange = { planningState = planningState.copy(origin = it) },
+                label = { Text("Origin*") },
+                placeholder = { Text("Enter origin") },
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = {
+                    Icon(Icons.Default.Place, contentDescription = null)
+                }
+            )
+
             OutlinedTextField(
                 value = planningState.destination,
                 onValueChange = { planningState = planningState.copy(destination = it) },
-                label = { Text("Where do you want to go?*") },
+                label = { Text("Destination*") },
                 placeholder = { Text("Enter destination") },
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = {
                     Icon(Icons.Default.Place, contentDescription = null)
-                },
-                supportingText = {
-                    Text("Popular: Paris, Tokyo, New York")
                 }
             )
-
             // Dates
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -108,6 +87,14 @@ fun TripPlanningScreen(
                     readOnly = true,
                     leadingIcon = {
                         Icon(Icons.Default.CalendarToday, contentDescription = null)
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            isSelectingStartDate = true
+                            showDatePicker = true
+                        }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Select Start Date")
+                        }
                     }
                 )
 
@@ -119,30 +106,47 @@ fun TripPlanningScreen(
                     readOnly = true,
                     leadingIcon = {
                         Icon(Icons.Default.CalendarToday, contentDescription = null)
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            isSelectingStartDate = false
+                            showDatePicker = true
+                        }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Select End Date")
+                        }
                     }
                 )
             }
 
-            // Budget
-            OutlinedTextField(
-                value = planningState.budget,
-                onValueChange = {
-                    if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
-                        planningState = planningState.copy(budget = it)
-                    }
-                },
-                label = { Text("Total Budget*") },
-                placeholder = { Text("Enter your budget") },
+            // Budget Range
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = {
-                    Icon(Icons.Default.AttachMoney, contentDescription = null)
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                supportingText = {
-                    Text("Recommended: $2000-$5000 for a week")
-                }
-            )
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OutlinedTextField(
+                    value = planningState.budgetMin,
+                    onValueChange = { planningState = planningState.copy(budgetMin = it) },
+                    label = { Text("Min Budget*") },
+                    placeholder = { Text("Enter min budget") },
+                    modifier = Modifier.weight(1f),
+                    leadingIcon = {
+                        Icon(Icons.Default.AttachMoney, contentDescription = null)
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
 
+                OutlinedTextField(
+                    value = planningState.budgetMax,
+                    onValueChange = { planningState = planningState.copy(budgetMax = it) },
+                    label = { Text("Max Budget*") },
+                    placeholder = { Text("Enter Max Budget") },
+                    modifier = Modifier.weight(1f),
+                    leadingIcon = {
+                        Icon(Icons.Default.AttachMoney, contentDescription = null)
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
             // Number of Travelers
             OutlinedTextField(
                 value = planningState.travelers,
@@ -212,10 +216,28 @@ fun TripPlanningScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
             // Next Button
             Button(
-                onClick = onNextClick,
+                onClick = {
+                    coroutineScope.launch {
+                        // Example API calls
+                        val tripPlanResponse = NetworkModule.aiTripPlannerApi.generateTripPlan(
+                            TripPlanRequest(
+                                days = 7,
+                                destination = planningState.destination,
+                                interests = planningState.interests.map { it.name },
+                                budget = planningState.budgetMax,
+                                travelMode = "public transport"
+                            )
+                        )
+                        if (tripPlanResponse.isSuccessful) {
+                            // Handle successful response
+                            onNextClick()
+                        } else {
+                            // Handle error
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -235,17 +257,19 @@ fun TripPlanningScreen(
                 }
             }
         ) {
-            // Date picker implementation
-            Text("Date Picker placeholder - will implement with actual date picker")
+            // Implement a date picker here
+            // Example: Use a library like MaterialDatePicker
         }
     }
 }
 
 private fun isFormValid(state: TripPlanningState): Boolean {
-    return state.destination.isNotBlank() &&
+    return state.origin.isNotBlank() &&
+            state.destination.isNotBlank() &&
             state.startDate != null &&
             state.endDate != null &&
-            state.budget.isNotBlank() &&
+            state.budgetMin.isNotBlank() &&
+            state.budgetMax.isNotBlank() &&
             state.travelers.isNotBlank() &&
             state.interests.isNotEmpty()
 }

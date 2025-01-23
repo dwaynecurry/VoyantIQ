@@ -16,6 +16,8 @@ import androidx.compose.ui.window.Dialog
 import com.voyantiq.app.ui.theme.VoyantColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.voyantiq.app.utils.validateEmail
+
 
 sealed class ResetPasswordUiState {
     object Initial : ResetPasswordUiState()
@@ -204,13 +206,5 @@ fun ForgotPasswordScreen(
                 }
             }
         )
-    }
-}
-
-private fun validateEmail(email: String): String? {
-    return when {
-        email.isBlank() -> "Email is required"
-        !email.matches(Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) -> "Invalid email format"
-        else -> null
     }
 }

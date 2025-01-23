@@ -4,25 +4,26 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.voyantiq.app.ui.theme.VoyantColors
+import com.voyantiq.app.network.NetworkModule
+import com.voyantiq.app.network.models.Restaurant
+import kotlinx.coroutines.launch
+import androidx.compose.ui.Alignment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    onDestinationClick: (String) -> Unit
+    onEventClick: (String) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    var activities by remember { mutableStateOf<List<Restaurant>>(emptyList()) }
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -31,17 +32,24 @@ fun SearchScreen(
         SearchBar(
             query = searchQuery,
             onQueryChange = { searchQuery = it },
-            onSearch = { },
+            onSearch = {
+                coroutineScope.launch {
+                    val response = NetworkModule.tripadvisorApi.searchRestaurants(locationId = "304554")
+                    if (response.isSuccessful) {
+                        activities = response.body()?.restaurants ?: emptyList()
+                    }
+                }
+            },
             active = false,
             onActiveChange = { },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            placeholder = { Text("Search destinations") },
+            placeholder = { Text("Search for events, dining, etc.") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") }
         ) { }
 
-        // Popular Destinations
+        // Quick Search Results
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
@@ -49,26 +57,25 @@ fun SearchScreen(
         ) {
             item {
                 Text(
-                    "Popular Destinations",
+                    "Quick Finds for Today",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            items(sampleDestinations) { destination ->
-                DestinationCard(
-                    destination = destination,
-                    onClick = { onDestinationClick(destination.id) }
+            items(activities) { activity ->
+                ActivityCard(
+                    activity = activity,
+                    onClick = { onEventClick(activity.id) }
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DestinationCard(
-    destination: Destination,
+private fun ActivityCard(
+    activity: Restaurant,
     onClick: () -> Unit
 ) {
     Card(
@@ -85,78 +92,33 @@ private fun DestinationCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Placeholder for destination image
-            Surface(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(MaterialTheme.shapes.medium),
-                color = VoyantColors.Primary.copy(alpha = 0.1f)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Place,
-                    contentDescription = null,
-                    modifier = Modifier.padding(16.dp),
-                    tint = VoyantColors.Primary
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.Event,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(40.dp)
+            )
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    destination.name,
+                    activity.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    destination.description,
+                    activity.cuisine.joinToString(", "),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = VoyantColors.TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             Icon(
                 Icons.Default.ChevronRight,
                 contentDescription = "View Details",
-                tint = VoyantColors.TextSecondary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
-
-// Data class for destinations
-data class Destination(
-    val id: String,
-    val name: String,
-    val description: String,
-    val imageUrl: String? = null
-)
-
-// Sample data
-private val sampleDestinations = listOf(
-    Destination(
-        "1",
-        "Paris, France",
-        "City of Light and Romance",
-    ),
-    Destination(
-        "2",
-        "Tokyo, Japan",
-        "Where Tradition Meets Innovation",
-    ),
-    Destination(
-        "3",
-        "New York City, USA",
-        "The City That Never Sleeps",
-    ),
-    Destination(
-        "4",
-        "Barcelona, Spain",
-        "Art, Architecture, and Mediterranean Charm",
-    ),
-    Destination(
-        "5",
-        "Dubai, UAE",
-        "Modern Luxury in the Desert",
-    )
-)

@@ -7,8 +7,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.voyantiq.app.BuildConfig
-import com.voyantiq.app.DevModeManager
 import com.voyantiq.app.ui.screens.*
 
 @Composable
@@ -19,8 +17,6 @@ fun VoyantNavigation(
         navController = navController,
         startDestination = NavigationRoutes.Splash.route
     ) {
-        // ACTIVE ROUTES
-
         // Splash and Welcome
         composable(NavigationRoutes.Splash.route) {
             SplashScreen {
@@ -41,7 +37,6 @@ fun VoyantNavigation(
                 }
             )
         }
-
         // Authentication
         composable(NavigationRoutes.Login.route) {
             LoginScreen(
@@ -65,9 +60,7 @@ fun VoyantNavigation(
         composable(NavigationRoutes.SignUp.route) {
             SignUpScreen(
                 onSignUpComplete = {
-                    navController.navigate(NavigationRoutes.EmailVerification.createRoute("test@example.com")) {
-                        popUpTo(NavigationRoutes.Welcome.route)
-                    }
+                    navController.navigate(NavigationRoutes.EmailVerification.createRoute(it))
                 },
                 onBackClick = {
                     navController.popBackStack()
@@ -100,7 +93,6 @@ fun VoyantNavigation(
                 }
             )
         }
-
         composable(NavigationRoutes.ForgotPassword.route) {
             ForgotPasswordScreen(
                 onResetSent = {
@@ -117,18 +109,11 @@ fun VoyantNavigation(
         // Main Screens
         composable(NavigationRoutes.Home.route) {
             HomeScreen(
-                onLogoutClick = {
-                    DevModeManager.disableDevMode()
-                    navController.navigate(NavigationRoutes.Welcome.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                },
-                onEditPreferencesClick = {
-                    navController.navigate(NavigationRoutes.Preferences.route)
-                },
-                onPaymentMethodsClick = {
-                    navController.navigate(NavigationRoutes.PaymentMethods.route)
-                }
+                onNewTripClick = { /* Handle new trip */ },
+                onTripClick = { /* Handle trip click */ },
+                onEditPreferencesClick = { /* Handle edit preferences */ },
+                onPaymentMethodsClick = { /* Handle payment methods */ },
+                onLogoutClick = { /* Handle logout */ }
             )
         }
 
@@ -153,7 +138,6 @@ fun VoyantNavigation(
                 }
             )
         }
-
         composable(NavigationRoutes.Terms.route) {
             TermsScreen(
                 onBackClick = {
@@ -170,106 +154,34 @@ fun VoyantNavigation(
             )
         }
 
+        // Trip Details
         composable(
             route = NavigationRoutes.TripDetails.route,
             arguments = listOf(navArgument("tripId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val tripId = backStackEntry.arguments?.getString("tripId") ?: return@composable
+            val tripId = backStackEntry.arguments?.getString("tripId")
             TripDetailsScreen(
-                tripId = tripId,
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onConfirmClick = {
-                    navController.popBackStack()
-                },
+                tripId = tripId ?: "",
+                onBackClick = { navController.popBackStack() },
+                onConfirmClick = { navController.popBackStack() },
                 onEditClick = {
                     // Navigate to edit screen when implemented
                 }
             )
         }
-
-        // PLANNED ROUTES (Commented out until implemented)
-        /*
-        // Trip Planning Flow
+        // New Trip Planning and Itinerary Generation
         composable(NavigationRoutes.TripPlanning.route) {
             TripPlanningScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onBasicDetailsComplete = { tripId ->
-                    navController.navigate(NavigationRoutes.ItineraryGeneration.createRoute(tripId))
-                }
+                onBackClick = { navController.popBackStack() },
+                onNextClick = { navController.navigate(NavigationRoutes.ItineraryGeneration.route) }
             )
         }
 
-        composable(
-            route = NavigationRoutes.ItineraryGeneration.route,
-            arguments = listOf(navArgument("tripId") { type = NavType.StringType })
-        ) {
-            // ItineraryGenerationScreen implementation pending
+        composable(NavigationRoutes.ItineraryGeneration.route) {
+            ItineraryGenerationScreen(
+                onBackClick = { navController.popBackStack() },
+                onConfirmClick = { /* Handle confirm */ }
+            )
         }
-
-        // Search and Discovery
-        composable(NavigationRoutes.Search.route) {
-            // SearchScreen implementation pending
-        }
-
-        composable(
-            route = NavigationRoutes.SearchResults.route,
-            arguments = listOf(navArgument("query") { type = NavType.StringType })
-        ) {
-            // SearchResultsScreen implementation pending
-        }
-
-        composable(
-            route = NavigationRoutes.DestinationDetails.route,
-            arguments = listOf(navArgument("id") { type = NavType.StringType })
-        ) {
-            // DestinationDetailsScreen implementation pending
-        }
-
-        // Booking Flow
-        composable(
-            route = NavigationRoutes.BookingDetails.route,
-            arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
-        ) {
-            // BookingDetailsScreen implementation pending
-        }
-
-        // User Profile and Settings
-        composable(NavigationRoutes.Profile.route) {
-            // ProfileScreen implementation pending
-        }
-
-        composable(NavigationRoutes.Settings.route) {
-            // SettingsScreen implementation pending
-        }
-
-        // Social Features
-        composable(NavigationRoutes.Community.route) {
-            // CommunityScreen implementation pending
-        }
-
-        composable(
-            route = NavigationRoutes.UserProfile.route,
-            arguments = listOf(navArgument("userId") { type = NavType.StringType })
-        ) {
-            // UserProfileScreen implementation pending
-        }
-
-        // Premium Features
-        composable(NavigationRoutes.PremiumMembership.route) {
-            // PremiumMembershipScreen implementation pending
-        }
-
-        composable(NavigationRoutes.RewardPoints.route) {
-            // RewardPointsScreen implementation pending
-        }
-
-        composable(NavigationRoutes.VIPServices.route) {
-            // VIPServicesScreen implementation pending
-        }
-        */
     }
 }

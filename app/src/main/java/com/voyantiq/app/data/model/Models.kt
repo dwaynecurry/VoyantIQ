@@ -7,6 +7,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+
+
 // Enums
 enum class TripStatus {
     PLANNING,
@@ -91,6 +93,22 @@ enum class NotificationPriority {
 }
 
 // Data Classes
+data class Restaurant(
+    val id: String,
+    val name: String,
+    val cuisine: List<String>,
+    val rating: Float,
+    val priceLevel: String,
+    val location: Location
+)
+
+data class Location(
+    val latitude: Double,
+    val longitude: Double,
+    val address: String,
+    val city: String,
+    val country: String
+)
 data class Trip(
     val id: String,
     val destination: String,

@@ -1,19 +1,30 @@
 package com.voyantiq.app.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
+import com.voyantiq.app.data.model.SampleData
+import com.voyantiq.app.data.model.TripActivity
+import com.voyantiq.app.data.model.DateTimeUtils
 
 @Composable
 fun ItineraryGenerationScreen(
     onBackClick: () -> Unit,
     onConfirmClick: () -> Unit
 ) {
-    var isGenerating by remember { mutableStateOf(true) }
+    var expandedDay by remember { mutableStateOf<Int?>(null) }
+    var activities by remember { mutableStateOf(SampleData.getActivitiesForTrip("1")) }
+    val days = activities.groupBy { it.startTime.toLocalDate() }
 
     Column(
         modifier = Modifier
@@ -29,7 +40,7 @@ fun ItineraryGenerationScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
-                Text("←")
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
             Text(
                 text = "Your Itinerary",
@@ -37,110 +48,68 @@ fun ItineraryGenerationScreen(
             )
         }
 
-        if (isGenerating) {
-            // Loading State
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Generating your perfect itinerary...",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-        } else {
-            // Generated Itinerary
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Trip Overview
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            Text(
-                                text = "Trip Overview",
-                                style = MaterialTheme.typography.titleLarge
-                            )
-                            Text("Duration: 7 days")
-                            Text("Total Budget: $2,500")
-                            Text("Activities: 15")
+        // Itinerary Overview
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            itemsIndexed(activities) { index, activity ->
+                ActivityCard(
+                    activity = activity,
+                    onDrag = { fromIndex, toIndex ->
+                        activities = activities.toMutableList().apply {
+                            add(toIndex, removeAt(fromIndex))
                         }
-                    }
-                }
-
-                // Generated Activities
-                items(5) { index ->
-                    ActivityCard(
-                        title = "Day ${index + 1}",
-                        description = "Various activities planned",
-                        time = "Full day",
-                        cost = "$200"
-                    )
-                }
+                    },
+                    index = index
+                )
             }
+        }
 
-            // Confirm Button
-            Button(
-                onClick = onConfirmClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp)
-            ) {
-                Text("Confirm Itinerary")
-            }
+        // Confirm Button
+        Button(
+            onClick = onConfirmClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
+        ) {
+            Text("Confirm Itinerary")
         }
     }
 }
 
 @Composable
 private fun ActivityCard(
-    title: String,
-    description: String,
-    time: String,
-    cost: String
+    activity: TripActivity,
+    onDrag: (Int, Int) -> Unit,
+    index: Int
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    // Handle drag logic here
+                }
+            }
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = title,
+                text = activity.title,
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium
+                text = "${DateTimeUtils.formatTime(activity.startTime)} - ${DateTimeUtils.formatTime(activity.endTime)}",
+                style = MaterialTheme.typography.bodySmall
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = time,
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Text(
-                    text = cost,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+            Text(
+                text = activity.location,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
